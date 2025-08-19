@@ -7,13 +7,18 @@
         "build": "tsc",
         "start": "node dist/index.js",
         "dev": "nodemon --watch \"src/**\" --ext \"ts,json\" --ignore \"src/**/*.spec.ts\" --exec \"npx tsx src/index.ts\"",
-        "cold": "npm run build && npm start"
+        "cold": "npm run build && npm start",
+        "db:seed": "npx tsx src/db/seed.ts"
     },
     "author": "Hudymenko Yevhenii",
     "license": "MIT",
     "dependencies": {
         "@prisma/client": "^6.6.0",
+        "bcryptjs": "^3.0.2",
+        "cors": "^2.8.5",
         "dotenv": "^16.5.0",
+        "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2",
         "node-cron": "^3.0.3",
         "node-telegram-bot-api": "^0.66.0",
         "prisma": "^6.6.0",
@@ -21,6 +26,9 @@
         "uuid": "^11.0.5"
     },
     "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.3",
+        "@types/jsonwebtoken": "^9.0.10",
         "@types/node": "^20.0.0",
         "@types/node-cron": "^3.0.11",
         "@types/node-telegram-bot-api": "^0.64.8",

@@ -14,7 +14,7 @@ import {
     Grade,
 } from "../../generated/prisma";
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 
 export class Repository {
     // User management

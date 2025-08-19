@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(uuid())
+  telegramId   String       @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  phoneNumber  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  
+  // Course progress
+  userCourses  UserCourse[]
+  testResults  TestResult[]
+}
+
+model Admin {
+  id         String   @id @default(uuid())
+  telegramId String   @unique
+  createdAt  DateTime @default(now())
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  isActive    Boolean  @default(true)
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  lessons     Lesson[]
+  userCourses UserCourse[]
+}
+
+model Lesson {
+  id          String      @id @default(uuid())
+  courseId    String
+  course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  title       String
+  mediaType   MediaType
+  mediaUrl    String
+  caption     String?
+  buttonText  String?
+  buttonUrl   String?
+  orderIndex  Int
+  
+  // Test configuration
+  test        Test?
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Test {
+  id          String       @id @default(uuid())
+  lessonId    String       @unique
+  lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  title       String
+  questions   Question[]
+  testResults TestResult[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Question {
+  id          String   @id @default(uuid())
+  testId      String
+  test        Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  questionText String
+  options     String[] // Array of 4 options
+  correctOption Int    // Index of correct option (0-3)
+  orderIndex  Int
+  
+  createdAt   DateTime @default(now())
+}
+
+model UserCourse {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  currentLessonIndex Int        @default(0)
+  state           CourseState   @default(WATCHING_LESSON)
+  lastActivity    DateTime      @default(now())
+  completedAt     DateTime?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@unique([userId, courseId])
+}
+
+model TestResult {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId      String
+  test        Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  score       Int      // Percentage score
+  grade       Grade
+  answers     Json     // Store user answers
+  
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id          String       @id @default(uuid())
+  courseId    String?
+  state       CourseState?
+  mediaType   MediaType
+  mediaUrl    String
+  caption     String
+  buttonText  String?
+  buttonUrl   String?
+  delayMinutes Int         // Minutes to wait before sending
+  isActive    Boolean      @default(true)
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum CourseState {
+  WATCHING_LESSON
+  TAKING_TEST
+  COMPLETED_COURSE
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum Grade {
+  A
+  B
+  C
+  D
+  F
+}

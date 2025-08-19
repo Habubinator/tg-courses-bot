@@ -1,0 +1,32 @@
+{
+    "name": "school-onboarding-bot",
+    "version": "1.0.0",
+    "description": "A Telegram bot for school onboarding lessons and tests",
+    "main": "index.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "dev": "nodemon --watch \"src/**\" --ext \"ts,json\" --ignore \"src/**/*.spec.ts\" --exec \"npx tsx src/index.ts\"",
+        "cold": "npm run build && npm start"
+    },
+    "author": "Hudymenko Yevhenii",
+    "license": "MIT",
+    "dependencies": {
+        "@prisma/client": "^6.6.0",
+        "dotenv": "^16.5.0",
+        "node-cron": "^3.0.3",
+        "node-telegram-bot-api": "^0.66.0",
+        "prisma": "^6.6.0",
+        "tslib": "^2.8.1",
+        "uuid": "^11.0.5"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/node-cron": "^3.0.11",
+        "@types/node-telegram-bot-api": "^0.64.8",
+        "@types/uuid": "^10.0.0",
+        "nodemon": "^3.0.0",
+        "tsx": "^4.0.0",
+        "typescript": "^5.0.0"
+    }
+}

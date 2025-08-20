@@ -1,13 +1,10 @@
 {
     "compilerOptions": {
         "module": "NodeNext",
-        "target": "ESNext",
-        "declaration": false,
-        "removeComments": false,
-        "preserveConstEnums": true,
-        "pretty": true,
-        "noEmitHelpers": false,
-        "importHelpers": true,
+        "target": "ES2022",
+        "moduleResolution": "NodeNext",
+        "declaration": true,
+        "removeComments": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "strictNullChecks": false,
@@ -18,6 +15,9 @@
         "incremental": true,
         "noFallthroughCasesInSwitch": false,
         "sourceMap": true,
+        "resolveJsonModule": true,
+        "disableSizeLimit": true,
+        "rootDir": "./src",
         "outDir": "./dist",
         "baseUrl": "./",
         "paths": {

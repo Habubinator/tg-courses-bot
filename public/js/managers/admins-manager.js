@@ -1,7 +1,6 @@
 import { APIClient } from '../api.js';
 import { UIManager } from '../ui.js';
-import { paginationManager } from '../pagination.js';
-import { debounce } from '../utils.js';
+import { paginationManager, debounce } from '../pagination.js';
 
 export class AdminsManager {
     constructor() {

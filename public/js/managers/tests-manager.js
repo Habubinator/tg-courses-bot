@@ -1,4 +1,3 @@
-// js/managers/tests-manager.js
 import { APIClient } from '../api.js';
 import { UIManager } from '../ui.js';
 import { paginationManager, debounce } from '../pagination.js';

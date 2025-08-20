@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Bot Admin Panel</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body>
+    <!-- Login Form -->
+    <div id="loginContainer" class="login-container">
+        <form class="login-form" id="loginForm">
+            <h1>Админ панель школьного бота</h1>
+            <div id="loginError" class="error"></div>
+
+            <div class="form-group">
+                <label for="login">Логин</label>
+                <input type="text" id="login" name="login" required placeholder="admin">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn">Войти</button>
+        </form>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <h1>🎓 Панель управления школьным ботом</h1>
+                <div class="header-controls">
+                    <div class="stats-summary" id="statsSummary">
+                        <div class="stat-item">
+                            <span class="stat-label">Пользователей:</span>
+                            <span class="stat-value" id="totalUsers">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Курсов:</span>
+                            <span class="stat-value" id="totalCourses">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Админов:</span>
+                            <span class="stat-value" id="totalAdmins">-</span>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-sm">Выйти</button>
+                </div>
+            </div>
+
+            <div id="successMessage" class="success"></div>
+            <div id="errorMessage" class="error"></div>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="users">👥 Пользователи</button>
+                    <button class="tab-btn" data-tab="courses">📚 Курсы</button>
+                    <button class="tab-btn" data-tab="lessons">📖 Уроки</button>
+                    <button class="tab-btn" data-tab="tests">📝 Тесты</button>
+                    <button class="tab-btn" data-tab="admins">👨‍💼 Админы</button>
+                    <button class="tab-btn" data-tab="notifications">🔔 Уведомления</button>
+                </div>
+
+                <!-- Users Tab -->
+                <div id="usersTab" class="tab-content active">
+                    <div class="search-controls">
+                        <input type="text" class="search-input" id="usersSearch"
+                            placeholder="Поиск по имени или Telegram ID...">
+
+                        <select id="courseProgressFilter" class="filter-select">
+                            <option value="">Все пользователи</option>
+                            <option value="completed">Завершили курс</option>
+                            <option value="in_progress">В процессе</option>
+                            <option value="not_started">Не начинали</option>
+                        </select>
+
+                        <button class="btn btn-sm btn-secondary" id="clearUserFilters">🗑️ Очистить фильтры</button>
+                        <button class="btn btn-sm" id="refreshUsers">🔄 Обновить</button>
+                    </div>
+
+                    <div id="usersFiltersInfo" class="filters-info"></div>
+
+                    <div class="table-container">
+                        <div id="usersLoading" class="loading">Загрузка...</div>
+                        <table id="usersTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Telegram ID</th>
+                                    <th>Имя</th>
+                                    <th>Username</th>
+                                    <th>Телефон</th>
+                                    <th>Прогресс</th>
+                                    <th>Дата регистрации</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="pagination" id="usersPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Courses Tab -->
+                <div id="coursesTab" class="tab-content">
+                    <div class="search-controls">
+                        <input type="text" class="search-input" id="coursesSearch"
+                            placeholder="Поиск по названию курса...">
+                        <button class="btn btn-sm" id="addCourseBtn">+ Добавить курс</button>
+                        <button class="btn btn-sm" id="refreshCourses">🔄 Обновить</button>
+                    </div>
+                    <div class="table-container">
+                        <div id="coursesLoading" class="loading">Загрузка...</div>
+                        <table id="coursesTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Название</th>
+                                    <th>Описание</th>
+                                    <th>Активен</th>
+                                    <th>Порядок</th>
+                                    <th>Уроков</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="pagination" id="coursesPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Lessons Tab -->
+                <div id="lessonsTab" class="tab-content">
+                    <div class="search-controls">
+                        <input type="text" class="search-input" id="lessonsSearch"
+                            placeholder="Поиск по названию урока...">
+
+                        <select id="courseFilter" class="filter-select">
+                            <option value="">Все курсы</option>
+                        </select>
+
+                        <select id="mediaTypeFilter" class="filter-select">
+                            <option value="">Все типы медиа</option>
+                            <option value="PHOTO">Фото</option>
+                            <option value="VIDEO">Видео</option>
+                        </select>
+
+                        <button class="btn btn-sm" id="addLessonBtn">+ Добавить урок</button>
+                        <button class="btn btn-sm" id="refreshLessons">🔄 Обновить</button>
+                    </div>
+                    <div class="table-container">
+                        <div id="lessonsLoading" class="loading">Загрузка...</div>
+                        <table id="lessonsTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Курс</th>
+                                    <th>Название</th>
+                                    <th>Тип медиа</th>
+                                    <th>Порядок</th>
+                                    <th>Есть тест</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="pagination" id="lessonsPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Tests Tab -->
+                <div id="testsTab" class="tab-content">
+                    <div class="search-controls">
+                        <input type="text" class="search-input" id="testsSearch"
+                            placeholder="Поиск по названию теста...">
+                        <button class="btn btn-sm" id="refreshTests">🔄 Обновить</button>
+                    </div>
+                    <div class="table-container">
+                        <div id="testsLoading" class="loading">Загрузка...</div>
+                        <table id="testsTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Урок</th>
+                                    <th>Название теста</th>
+                                    <th>Вопросов</th>
+                                    <th>Результатов</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="pagination" id="testsPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Admins Tab -->
+                <div id="adminsTab" class="tab-content">
+                    <div class="search-controls">
+                        <input type="text" class="search-input" id="adminsSearch" placeholder="Поиск по Telegram ID...">
+                        <button class="btn btn-sm" id="addAdminBtn">+ Добавить админа</button>
+                        <button class="btn btn-sm" id="refreshAdmins">🔄 Обновить</button>
+                    </div>
+                    <div class="table-container">
+                        <div id="adminsLoading" class="loading">Загрузка...</div>
+                        <table id="adminsTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Telegram ID</th>
+                                    <th>Дата добавления</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="pagination" id="adminsPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Notifications Tab -->
+                <div id="notificationsTab" class="tab-content">
+                    <div class="search-controls">
+                        <button class="btn btn-sm" id="addNotificationBtn">+ Добавить уведомление</button>
+                        <button class="btn btn-sm" id="refreshNotifications">🔄 Обновить</button>
+                    </div>
+                    <div class="table-container">
+                        <div id="notificationsLoading" class="loading">Загрузка...</div>
+                        <table id="notificationsTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Курс</th>
+                                    <th>Состояние</th>
+                                    <th>Тип медиа</th>
+                                    <th>Задержка (мин)</th>
+                                    <th>Активно</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="pagination" id="notificationsPagination"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Modal -->
+    <div id="courseModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <h2 id="courseModalTitle">Добавить курс</h2>
+            <form id="courseForm">
+                <div class="form-group">
+                    <label for="courseTitle">Название курса</label>
+                    <input type="text" id="courseTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="courseDescription">Описание</label>
+                    <textarea id="courseDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="courseOrderIndex">Порядок отображения</label>
+                    <input type="number" id="courseOrderIndex" name="orderIndex" min="0" value="0">
+                </div>
+                <div class="form-group checkbox-group">
+                    <label for="courseIsActive">
+                        <input type="checkbox" id="courseIsActive" name="isActive" checked>
+                        Активен
+                    </label>
+                </div>
+                <button type="submit" class="btn">Сохранить</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('courseModal')">Отмена</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lesson Modal -->
+    <div id="lessonModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <h2 id="lessonModalTitle">Добавить урок</h2>
+            <form id="lessonForm">
+                <div class="form-group">
+                    <label for="lessonCourseId">Курс</label>
+                    <select id="lessonCourseId" name="courseId" required>
+                        <option value="">Выберите курс</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lessonTitle">Название урока</label>
+                    <input type="text" id="lessonTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="lessonMediaType">Тип медиа</label>
+                    <select id="lessonMediaType" name="mediaType" required>
+                        <option value="PHOTO">Фото</option>
+                        <option value="VIDEO">Видео</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lessonMediaUrl">URL медиа</label>
+                    <input type="url" id="lessonMediaUrl" name="mediaUrl" required>
+                </div>
+                <div class="form-group">
+                    <label for="lessonCaption">Описание</label>
+                    <textarea id="lessonCaption" name="caption" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="lessonButtonText">Текст кнопки (необязательно)</label>
+                    <input type="text" id="lessonButtonText" name="buttonText">
+                </div>
+                <div class="form-group">
+                    <label for="lessonButtonUrl">URL кнопки (необязательно)</label>
+                    <input type="url" id="lessonButtonUrl" name="buttonUrl">
+                </div>
+                <div class="form-group">
+                    <label for="lessonOrderIndex">Порядок в курсе</label>
+                    <input type="number" id="lessonOrderIndex" name="orderIndex" min="0" value="0">
+                </div>
+                <button type="submit" class="btn">Сохранить</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('lessonModal')">Отмена</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <h2 id="adminModalTitle">Добавить администратора</h2>
+            <form id="adminForm">
+                <div class="form-group">
+                    <label for="adminTelegramId">Telegram ID</label>
+                    <input type="text" id="adminTelegramId" name="telegramId" required placeholder="123456789"
+                        pattern="[0-9]+" title="Только цифры">
+                </div>
+                <button type="submit" class="btn">Добавить</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('adminModal')">Отмена</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <h2 id="notificationModalTitle">Добавить уведомление</h2>
+            <form id="notificationForm">
+                <div class="form-group">
+                    <label for="notificationCourseId">Курс (необязательно)</label>
+                    <select id="notificationCourseId" name="courseId">
+                        <option value="">Для всех курсов</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notificationState">Состояние пользователя</label>
+                    <select id="notificationState" name="state">
+                        <option value="WATCHING_LESSON">Просмотр урока</option>
+                        <option value="TAKING_TEST">Прохождение теста</option>
+                        <option value="COMPLETED_COURSE">Завершил курс</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notificationMediaType">Тип медиа</label>
+                    <select id="notificationMediaType" name="mediaType" required>
+                        <option value="PHOTO">Фото</option>
+                        <option value="VIDEO">Видео</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notificationMediaUrl">URL медиа</label>
+                    <input type="url" id="notificationMediaUrl" name="mediaUrl" required>
+                </div>
+                <div class="form-group">
+                    <label for="notificationCaption">Текст уведомления</label>
+                    <textarea id="notificationCaption" name="caption" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="notificationButtonText">Текст кнопки (необязательно)</label>
+                    <input type="text" id="notificationButtonText" name="buttonText">
+                </div>
+                <div class="form-group">
+                    <label for="notificationButtonUrl">URL кнопки (необязательно)</label>
+                    <input type="url" id="notificationButtonUrl" name="buttonUrl">
+                </div>
+                <div class="form-group">
+                    <label for="notificationDelayMinutes">Задержка отправки (минуты)</label>
+                    <input type="number" id="notificationDelayMinutes" name="delayMinutes" min="1" value="30">
+                </div>
+                <div class="form-group checkbox-group">
+                    <label for="notificationIsActive">
+                        <input type="checkbox" id="notificationIsActive" name="isActive" checked>
+                        Активно
+                    </label>
+                </div>
+                <button type="submit" class="btn">Сохранить</button>
+                <button type="button" class="btn btn-secondary"
+                    onclick="closeModal('notificationModal')">Отмена</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="js/bot-admin.js"></script>
+</body>
+
+</html>

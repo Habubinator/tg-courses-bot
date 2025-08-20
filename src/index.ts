@@ -3,10 +3,12 @@ import { CONFIG } from "./config";
 import { BotHandlers } from "./bot/handlers";
 import { Scheduler } from "./services/scheduler";
 import { NotificationService } from "./services/notificationService";
-import { app, PORT } from "./server/app";
+import { app } from "./server/app";
 
 // Global notification service instance
 let notificationService: NotificationService;
+
+const PORT = process.env.PORT || 3001;
 
 async function main(): Promise<void> {
     console.log("Starting School Onboarding Bot...");
@@ -37,7 +39,8 @@ async function main(): Promise<void> {
         scheduler.init();
         console.log("Scheduler initialized successfully!");
 
-        app.listen(PORT, () => {
+        // Start the Express server
+        const server = app.listen(PORT, () => {
             console.log(`🚀 Admin API Server running on port ${PORT}`);
             console.log(`📊 Admin panel: http://localhost:${PORT}`);
             console.log(`🔗 API endpoints: http://localhost:${PORT}/api/*`);
@@ -50,13 +53,19 @@ async function main(): Promise<void> {
         process.on("SIGINT", async () => {
             console.log("Received SIGINT. Shutting down bot...");
             await bot.close();
-            process.exit(0);
+            server.close(() => {
+                console.log("Server closed.");
+                process.exit(0);
+            });
         });
 
         process.on("SIGTERM", async () => {
             console.log("Received SIGTERM. Shutting down bot...");
             await bot.close();
-            process.exit(0);
+            server.close(() => {
+                console.log("Server closed.");
+                process.exit(0);
+            });
         });
 
         // Unhandled errors

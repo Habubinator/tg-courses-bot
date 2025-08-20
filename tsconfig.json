@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-        "module": "NodeNext",
+        "module": "CommonJS",
         "target": "ES2022",
-        "moduleResolution": "NodeNext",
+        "moduleResolution": "node",
         "declaration": true,
         "removeComments": true,
         "esModuleInterop": true,
@@ -21,7 +21,7 @@
         "outDir": "./dist",
         "baseUrl": "./",
         "paths": {
-            "@*": ["./src/*"]
+            "@/*": ["./src/*"]
         }
     },
     "include": ["src/**/*"],

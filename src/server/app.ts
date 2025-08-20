@@ -11,10 +11,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const publicPath = path.join(process.cwd(), "public");
+// Static files - fix the path resolution
+const publicPath = path.resolve(process.cwd(), "public");
+console.log("Public path:", publicPath); // Debug log
 app.use(express.static(publicPath));
+
+// Root route to serve index.html
 app.get("/", (req, res) => {
-    res.sendFile(path.join(publicPath, "index.html"));
+    const indexPath = path.join(publicPath, "index.html");
+    console.log("Serving index.html from:", indexPath); // Debug log
+    res.sendFile(indexPath);
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key";
@@ -883,12 +889,4 @@ app.get("/api/stats", authenticateToken, async (req, res) => {
     }
 });
 
-// Запуск сервера
-export const PORT = process.env.PORT || 3001;
-
-// Graceful shutdown
-process.on("SIGINT", async () => {
-    console.log("Shutting down server...");
-    await prisma.$disconnect();
-    process.exit(0);
-});
+console.log("Express app configured successfully!");

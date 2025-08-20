@@ -12,9 +12,15 @@ async function seed() {
     try {
         // Create admin user
         console.log("👨‍💼 Creating admin user...");
-        const admin = await prisma.admin.create({
-            data: {
-                telegramId: "513950472", // Replace with your actual Telegram ID
+        const admin = await prisma.admin.upsert({
+            where: {
+                telegramId: "513950472",
+            },
+            create: {
+                telegramId: "513950472",
+            },
+            update: {
+                telegramId: "513950472",
             },
         });
         console.log(`✅ Admin created with ID: ${admin.id}`);

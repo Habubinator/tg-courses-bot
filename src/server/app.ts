@@ -1,19 +1,26 @@
 import express from "express";
 import cors from "cors";
-import { prisma } from "@db";
-import bcrypt from "bcryptjs";
+import { prisma } from "../db";
 import jwt from "jsonwebtoken";
+import path from "path";
 
-const app = express();
+export const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const publicPath = path.join(process.cwd(), "public");
+app.use(express.static(publicPath));
+app.get("/", (req, res) => {
+    res.sendFile(path.join(publicPath, "index.html"));
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key";
 
 // Middleware для проверки авторизации
-const authenticateToken = (req: any, res: any, next: any) => {
+export const authenticateToken = (req: any, res: any, next: any) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
 
@@ -877,13 +884,7 @@ app.get("/api/stats", authenticateToken, async (req, res) => {
 });
 
 // Запуск сервера
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-    console.log(`🚀 Admin API Server running on port ${PORT}`);
-    console.log(`📊 Admin panel: http://localhost:${PORT}`);
-    console.log(`🔗 API endpoints: http://localhost:${PORT}/api/*`);
-});
+export const PORT = process.env.PORT || 3001;
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
@@ -891,5 +892,3 @@ process.on("SIGINT", async () => {
     await prisma.$disconnect();
     process.exit(0);
 });
-
-export default app;

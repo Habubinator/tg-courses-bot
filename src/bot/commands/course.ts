@@ -143,7 +143,6 @@ export class CourseCommands {
 
             const options: any = {
                 caption: lesson.caption || lesson.title,
-                reply_markup: Keyboard.getWatchedKeyboard(),
             };
 
             // Add button if provided
@@ -166,6 +165,11 @@ export class CourseCommands {
             } else if (lesson.mediaType === MediaType.VIDEO) {
                 await this.bot.sendVideo(chatId, lesson.mediaUrl, options);
             }
+            await this.bot.sendMessage(
+                chatId,
+                "Нажми на кнопку когда окончишь!",
+                { reply_markup: Keyboard.getWatchedKeyboard() }
+            );
         } catch (error) {
             console.error("Error sending lesson:", error);
             await this.bot.sendMessage(

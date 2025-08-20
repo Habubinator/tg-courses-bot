@@ -13,6 +13,7 @@ export class Keyboard {
         return {
             keyboard: [[{ text: "✅ Посмотрел!" }]],
             resize_keyboard: true,
+            one_time_keyboard: true,
         };
     }
 

@@ -3,6 +3,7 @@ import { CONFIG } from "./config";
 import { BotHandlers } from "./bot/handlers";
 import { Scheduler } from "./services/scheduler";
 import { NotificationService } from "./services/notificationService";
+import { app, PORT } from "./server/app";
 
 // Global notification service instance
 let notificationService: NotificationService;
@@ -36,6 +37,12 @@ async function main(): Promise<void> {
         scheduler.init();
         console.log("Scheduler initialized successfully!");
 
+        app.listen(PORT, () => {
+            console.log(`🚀 Admin API Server running on port ${PORT}`);
+            console.log(`📊 Admin panel: http://localhost:${PORT}`);
+            console.log(`🔗 API endpoints: http://localhost:${PORT}/api/*`);
+        });
+
         // Log successful startup
         console.log("Bot is now running. Press CTRL+C to stop.");
 
@@ -61,9 +68,6 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 }
-
-// Export notification service for global access
-export { notificationService };
 
 // Run the application
 main().catch((error) => {

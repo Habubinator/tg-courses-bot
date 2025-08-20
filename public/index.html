@@ -151,9 +151,13 @@
                             <option value="VIDEO">Видео</option>
                         </select>
 
+                        <button class="btn btn-sm btn-secondary" id="clearLessonFilters">🗑️ Очистить фильтры</button>
                         <button class="btn btn-sm" id="addLessonBtn">+ Добавить урок</button>
                         <button class="btn btn-sm" id="refreshLessons">🔄 Обновить</button>
                     </div>
+
+                    <div id="lessonsFiltersInfo" class="filters-info"></div>
+
                     <div class="table-container">
                         <div id="lessonsLoading" class="loading">Загрузка...</div>
                         <table id="lessonsTable" style="display: none;">
@@ -163,7 +167,8 @@
                                     <th>Курс</th>
                                     <th>Название</th>
                                     <th>Тип медиа</th>
-                                    <th>Порядок</th>
+                                    <th>Описание</th>
+                                    <th>Кнопка</th>
                                     <th>Есть тест</th>
                                     <th>Действия</th>
                                 </tr>

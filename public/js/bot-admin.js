@@ -117,16 +117,23 @@ class AdminApp {
     }
 
     setupEventListeners() {
-        // Login form
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.handleLogin(e);
-        });
+        // Login form - FIXED: Prevent default form submission
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.handleLogin(e);
+            });
+        }
 
         // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            this.handleLogout();
-        });
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleLogout();
+            });
+        }
 
         // Global modal close function
         window.closeModal = (modalId) => UIManager.closeModal(modalId);
@@ -138,40 +145,58 @@ class AdminApp {
     }
 
     async handleLogin(e) {
-        const formData = new FormData(e.target);
-        const loginData = {
-            login: formData.get('login'),
-            password: formData.get('password')
-        };
+        console.log('Login form submitted'); // Debug log
+
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
 
         try {
+            // Disable submit button and show loading
+            submitButton.disabled = true;
+            submitButton.textContent = 'Вход...';
+
+            // Clear any previous errors
+            UIManager.showError('', 'loginError');
+
+            const formData = new FormData(e.target);
+            const loginData = {
+                login: formData.get('login'),
+                password: formData.get('password')
+            };
+
+            console.log('Sending login request with:', loginData); // Debug log
+
             const response = await APIClient.post(API_CONFIG.ENDPOINTS.LOGIN, loginData);
+            console.log('Login response:', response); // Debug log
 
             if (response.token) {
                 localStorage.setItem('bot_admin_token', response.token);
 
-                // Update global auth token
-                const { APIClient: API } = await import('./api.js');
+                // Update global auth token in api.js
+                window.location.reload(); // Simple reload to refresh auth state
 
-                await this.loadInitialData();
-                UIManager.showAdminPanel();
-                UIManager.showSuccessMessage('Добро пожаловать в админ панель!');
             } else {
                 throw new Error(response.message || 'Ошибка авторизации');
             }
 
         } catch (error) {
-            UIManager.showError(error.message, 'loginError');
+            console.error('Login error:', error); // Debug log
+            UIManager.showError(error.message || 'Ошибка подключения к серверу', 'loginError');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
         }
     }
 
     handleLogout() {
         localStorage.removeItem('bot_admin_token');
-        UIManager.showLoginPanel();
-        UIManager.showSuccessMessage('Вы вышли из системы');
 
         // Clear all data
         this.clearAllTables();
+
+        // Show login panel
+        UIManager.showLoginPanel();
+        UIManager.showSuccessMessage('Вы вышли из системы');
     }
 
     async loadInitialData() {
@@ -254,7 +279,7 @@ window.addEventListener('error', (e) => {
 
 window.addEventListener('unhandledrejection', (e) => {
     console.error('Unhandled promise rejection:', e.reason);
-    UIManager.showErrorMessage('Ошибка при выполнении запроса: ' + e.reason.message);
+    UIManager.showErrorMessage('Ошибка при выполнении запроса: ' + (e.reason?.message || e.reason));
 });
 
 // Initialize app when DOM is loaded
@@ -262,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         const app = new AdminApp();
 
-        // Make managers globally accessible for debugging
         window.adminApp = app;
         window.managers = app.managers;
 
@@ -274,8 +298,3 @@ document.addEventListener('DOMContentLoaded', () => {
         UIManager.showErrorMessage('Не удалось инициализировать приложение. Перезагрузите страницу.');
     }
 });
-
-// Hot reload for development
-if (module.hot) {
-    module.hot.accept();
-}

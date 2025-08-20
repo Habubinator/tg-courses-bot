@@ -46,9 +46,10 @@ export const authenticateToken = (req: any, res: any, next: any) => {
 // Авторизация
 app.post("/api/auth/login", async (req, res) => {
     try {
+        console.log(req.body, req.params, req.query);
         const { login, password } = req.body;
 
-        if (login === "admin" && password === "admin123") {
+        if (login === "admin" && password === "admin") {
             const token = jwt.sign(
                 { id: 1, login: "admin", role: "admin" },
                 JWT_SECRET,

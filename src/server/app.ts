@@ -1152,4 +1152,523 @@ app.get("/api/stats", authenticateToken, async (req, res) => {
     }
 });
 
+// === МАССОВАЯ РАССЫЛКА ===
+
+// Получить статистику аудитории для рассылки
+app.get(
+    "/api/broadcast/audience-stats",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const { targetType, courseId, status, recentDays } = req.query;
+
+            let where: any = {};
+            let totalUsers = 0;
+            let breakdown: any[] = [];
+
+            switch (targetType) {
+                case "all":
+                    totalUsers = await prisma.user.count();
+
+                    // Разбивка по статусу регистрации
+                    const [recentUsers, activeUsers] = await Promise.all([
+                        prisma.user.count({
+                            where: {
+                                createdAt: {
+                                    gte: new Date(
+                                        Date.now() - 7 * 24 * 60 * 60 * 1000
+                                    ),
+                                },
+                            },
+                        }),
+                        prisma.userCourse.count({
+                            where: {
+                                lastActivity: {
+                                    gte: new Date(
+                                        Date.now() - 7 * 24 * 60 * 60 * 1000
+                                    ),
+                                },
+                            },
+                        }),
+                    ]);
+
+                    breakdown = [
+                        { label: "Всего пользователей", count: totalUsers },
+                        { label: "Новые за неделю", count: recentUsers },
+                        { label: "Активные за неделю", count: activeUsers },
+                    ];
+                    break;
+
+                case "course":
+                    if (courseId) {
+                        const courseUsers = await prisma.userCourse.findMany({
+                            where: { courseId: courseId as string },
+                            include: { user: true },
+                        });
+
+                        totalUsers = courseUsers.length;
+
+                        const completed = courseUsers.filter(
+                            (uc) => uc.completedAt
+                        ).length;
+                        const inProgress = courseUsers.filter(
+                            (uc) => !uc.completedAt && uc.currentLessonIndex > 0
+                        ).length;
+                        const notStarted = courseUsers.filter(
+                            (uc) => uc.currentLessonIndex === 0
+                        ).length;
+
+                        breakdown = [
+                            { label: "Завершили курс", count: completed },
+                            { label: "В процессе", count: inProgress },
+                            { label: "Не начинали", count: notStarted },
+                        ];
+                    }
+                    break;
+
+                case "status":
+                    if (status === "completed") {
+                        where.userCourses = {
+                            some: { completedAt: { not: null } },
+                        };
+                    } else if (status === "in_progress") {
+                        where.userCourses = {
+                            some: {
+                                AND: [
+                                    { completedAt: null },
+                                    { currentLessonIndex: { gt: 0 } },
+                                ],
+                            },
+                        };
+                    } else if (status === "not_started") {
+                        where.userCourses = { none: {} };
+                    }
+
+                    totalUsers = await prisma.user.count({ where });
+                    breakdown = [
+                        {
+                            label: `Пользователи со статусом: ${status}`,
+                            count: totalUsers,
+                        },
+                    ];
+                    break;
+
+                case "recent":
+                    const days = parseInt(recentDays as string) || 7;
+                    where.createdAt = {
+                        gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
+                    };
+
+                    totalUsers = await prisma.user.count({ where });
+                    breakdown = [
+                        {
+                            label: `Зарегистрированы за ${days} дней`,
+                            count: totalUsers,
+                        },
+                    ];
+                    break;
+
+                default:
+                    totalUsers = 0;
+            }
+
+            // Дополнительная статистика
+            const [activeUsers, recentUsers] = await Promise.all([
+                prisma.userCourse.count({
+                    where: {
+                        lastActivity: {
+                            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                        },
+                    },
+                }),
+                prisma.user.count({
+                    where: {
+                        createdAt: {
+                            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                        },
+                    },
+                }),
+            ]);
+
+            res.json({
+                success: true,
+                data: {
+                    totalUsers,
+                    activeUsers,
+                    recentUsers,
+                    breakdown,
+                },
+            });
+        } catch (error) {
+            console.error("Error fetching audience stats:", error);
+            res.status(500).json({
+                error: "Failed to fetch audience statistics",
+            });
+        }
+    }
+);
+
+// Отправить массовую рассылку
+app.post("/api/broadcast/send", authenticateToken, async (req, res) => {
+    try {
+        const {
+            targetType,
+            courseId,
+            status,
+            recentDays,
+            mediaType,
+            mediaUrl,
+            message,
+            buttonText,
+            buttonUrl,
+        } = req.body;
+
+        if (!bot) {
+            return res.status(500).json({ error: "Bot not configured" });
+        }
+
+        // Валидация
+        if (!message || !message.trim()) {
+            return res.status(400).json({ error: "Message is required" });
+        }
+
+        if (mediaType !== "text" && !mediaUrl) {
+            return res
+                .status(400)
+                .json({ error: "Media URL is required for media messages" });
+        }
+
+        if (buttonText && !buttonUrl) {
+            return res
+                .status(400)
+                .json({
+                    error: "Button URL is required when button text is provided",
+                });
+        }
+
+        // Получаем пользователей для рассылки
+        let users: any[] = [];
+
+        switch (targetType) {
+            case "all":
+                users = await prisma.user.findMany({
+                    select: {
+                        id: true,
+                        telegramId: true,
+                        firstName: true,
+                        lastName: true,
+                        username: true,
+                    },
+                });
+                break;
+
+            case "course":
+                if (courseId) {
+                    const courseUsers = await prisma.userCourse.findMany({
+                        where: { courseId },
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    telegramId: true,
+                                    firstName: true,
+                                    lastName: true,
+                                    username: true,
+                                },
+                            },
+                        },
+                    });
+                    users = courseUsers.map((uc) => uc.user);
+                }
+                break;
+
+            case "status":
+                let where: any = {};
+
+                if (status === "completed") {
+                    where.userCourses = {
+                        some: { completedAt: { not: null } },
+                    };
+                } else if (status === "in_progress") {
+                    where.userCourses = {
+                        some: {
+                            AND: [
+                                { completedAt: null },
+                                { currentLessonIndex: { gt: 0 } },
+                            ],
+                        },
+                    };
+                } else if (status === "not_started") {
+                    where.userCourses = { none: {} };
+                }
+
+                users = await prisma.user.findMany({
+                    where,
+                    select: {
+                        id: true,
+                        telegramId: true,
+                        firstName: true,
+                        lastName: true,
+                        username: true,
+                    },
+                });
+                break;
+
+            case "recent":
+                const days = parseInt(recentDays) || 7;
+                users = await prisma.user.findMany({
+                    where: {
+                        createdAt: {
+                            gte: new Date(
+                                Date.now() - days * 24 * 60 * 60 * 1000
+                            ),
+                        },
+                    },
+                    select: {
+                        id: true,
+                        telegramId: true,
+                        firstName: true,
+                        lastName: true,
+                        username: true,
+                    },
+                });
+                break;
+
+            default:
+                return res.status(400).json({ error: "Invalid target type" });
+        }
+
+        if (users.length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    sent: 0,
+                    failed: 0,
+                    total: 0,
+                    details: [
+                        {
+                            success: false,
+                            message:
+                                "No users found for the specified criteria",
+                        },
+                    ],
+                },
+            });
+        }
+
+        // Отправляем сообщения
+        let sentCount = 0;
+        let failedCount = 0;
+        const details: any[] = [];
+
+        for (const user of users) {
+            try {
+                const options: any = {};
+
+                if (buttonText && buttonUrl) {
+                    options.reply_markup = {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: buttonText,
+                                    url: buttonUrl,
+                                },
+                            ],
+                        ],
+                    };
+                }
+
+                if (mediaType === "text") {
+                    await bot.sendMessage(user.telegramId, message, {
+                        parse_mode: "Markdown",
+                        ...options,
+                    });
+                } else {
+                    options.caption = message;
+                    options.parse_mode = "Markdown";
+
+                    if (mediaType === "PHOTO") {
+                        await bot.sendPhoto(user.telegramId, mediaUrl, options);
+                    } else if (mediaType === "VIDEO") {
+                        await bot.sendVideo(user.telegramId, mediaUrl, options);
+                    }
+                }
+
+                sentCount++;
+                details.push({
+                    success: true,
+                    message: `Отправлено пользователю ${user.firstName || ""} ${
+                        user.lastName || ""
+                    } (@${user.username || user.telegramId})`,
+                });
+
+                // Добавляем небольшую задержку между отправками
+                await new Promise((resolve) => setTimeout(resolve, 100));
+            } catch (error) {
+                failedCount++;
+                details.push({
+                    success: false,
+                    message: `Ошибка отправки пользователю ${
+                        user.firstName || ""
+                    } ${user.lastName || ""}: ${error.message}`,
+                });
+                console.error(
+                    `Failed to send broadcast to user ${user.telegramId}:`,
+                    error
+                );
+            }
+        }
+
+        // Логируем массовую рассылку
+        console.log(
+            `Broadcast completed: ${sentCount} sent, ${failedCount} failed out of ${users.length} total users`
+        );
+
+        res.json({
+            success: true,
+            data: {
+                sent: sentCount,
+                failed: failedCount,
+                total: users.length,
+                details: details.slice(0, 50), // Ограничиваем количество деталей для производительности
+            },
+        });
+    } catch (error) {
+        console.error("Error sending broadcast:", error);
+        res.status(500).json({ error: "Failed to send broadcast" });
+    }
+});
+
+// Получить историю рассылок (опционально - для будущего расширения)
+app.get("/api/broadcast/history", authenticateToken, async (req, res) => {
+    try {
+        // Здесь можно было бы хранить историю рассылок в отдельной таблице
+        // Пока что возвращаем заглушку
+        res.json({
+            success: true,
+            data: [],
+            message: "Broadcast history feature is not implemented yet",
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch broadcast history" });
+    }
+});
+
+// Получить шаблоны сообщений (опционально)
+app.get("/api/broadcast/templates", authenticateToken, async (req, res) => {
+    try {
+        // Готовые шаблоны для быстрой рассылки
+        const templates = [
+            {
+                id: "welcome",
+                name: "Приветственное сообщение",
+                message:
+                    "👋 Добро пожаловать в наш образовательный бот!\n\nМы рады видеть вас среди наших учеников. Начните свое обучение прямо сейчас!",
+                mediaType: "text",
+                buttonText: "Начать обучение",
+                buttonUrl: "https://t.me/your_bot_username",
+            },
+            {
+                id: "reminder",
+                name: "Напоминание о курсе",
+                message:
+                    "📚 Не забудьте продолжить обучение!\n\nУ вас есть незавершенные уроки. Уделите несколько минут своему развитию.",
+                mediaType: "text",
+                buttonText: "Продолжить",
+                buttonUrl: "https://t.me/your_bot_username",
+            },
+            {
+                id: "announcement",
+                name: "Объявление",
+                message:
+                    "📢 Важное объявление!\n\n[Введите ваше объявление здесь]",
+                mediaType: "text",
+            },
+            {
+                id: "new_course",
+                name: "Новый курс",
+                message:
+                    "🆕 Новый курс доступен!\n\nМы добавили новый курс, который поможет вам развить дополнительные навыки.",
+                mediaType: "text",
+                buttonText: "Изучить курс",
+                buttonUrl: "https://t.me/your_bot_username",
+            },
+            {
+                id: "congratulations",
+                name: "Поздравления",
+                message: "🎉 Поздравляем!\n\n[Введите текст поздравления]",
+                mediaType: "text",
+            },
+        ];
+
+        res.json({
+            success: true,
+            data: templates,
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch templates" });
+    }
+});
+
+// Применить шаблон
+app.get("/api/broadcast/templates/:id", authenticateToken, async (req, res) => {
+    try {
+        const templates = [
+            {
+                id: "welcome",
+                name: "Приветственное сообщение",
+                message:
+                    "👋 Добро пожаловать в наш образовательный бот!\n\nМы рады видеть вас среди наших учеников. Начните свое обучение прямо сейчас!",
+                mediaType: "text",
+                buttonText: "Начать обучение",
+                buttonUrl: "https://t.me/your_bot_username",
+            },
+            {
+                id: "reminder",
+                name: "Напоминание о курсе",
+                message:
+                    "📚 Не забудьте продолжить обучение!\n\nУ вас есть незавершенные уроки. Уделите несколько минут своему развитию.",
+                mediaType: "text",
+                buttonText: "Продолжить",
+                buttonUrl: "https://t.me/your_bot_username",
+            },
+            {
+                id: "announcement",
+                name: "Объявление",
+                message:
+                    "📢 Важное объявление!\n\n[Введите ваше объявление здесь]",
+                mediaType: "text",
+            },
+            {
+                id: "new_course",
+                name: "Новый курс",
+                message:
+                    "🆕 Новый курс доступен!\n\nМы добавили новый курс, который поможет вам развить дополнительные навыки.",
+                mediaType: "text",
+                buttonText: "Изучить курс",
+                buttonUrl: "https://t.me/your_bot_username",
+            },
+            {
+                id: "congratulations",
+                name: "Поздравления",
+                message: "🎉 Поздравляем!\n\n[Введите текст поздравления]",
+                mediaType: "text",
+            },
+        ];
+
+        const template = templates.find((t) => t.id === req.params.id);
+
+        if (!template) {
+            return res.status(404).json({ error: "Template not found" });
+        }
+
+        res.json({
+            success: true,
+            data: template,
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch template" });
+    }
+});
+
 console.log("Express app configured successfully!");

@@ -3,6 +3,7 @@ import cors from "cors";
 import { prisma } from "../db";
 import jwt from "jsonwebtoken";
 import path from "path";
+import TelegramBot from "node-telegram-bot-api";
 
 export const app = express();
 
@@ -25,6 +26,12 @@ app.get("/", (req, res) => {
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key";
 
+// Создаем бота для отправки уведомлений (если токен доступен)
+let bot: TelegramBot | null = null;
+if (process.env.BOT_TOKEN) {
+    bot = new TelegramBot(process.env.BOT_TOKEN);
+}
+
 // Middleware для проверки авторизации
 export const authenticateToken = (req: any, res: any, next: any) => {
     const authHeader = req.headers["authorization"];
@@ -46,7 +53,6 @@ export const authenticateToken = (req: any, res: any, next: any) => {
 // Авторизация
 app.post("/api/auth/login", async (req, res) => {
     try {
-        console.log(req.body, req.params, req.query);
         const { login, password } = req.body;
 
         if (login === "admin" && password === "admin") {
@@ -438,6 +444,163 @@ app.get("/api/lessons/:id", authenticateToken, async (req, res) => {
     }
 });
 
+// Получить пользователей, которые прошли урок
+app.get(
+    "/api/lessons/:id/completed-users",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const lessonId = req.params.id;
+
+            // Получаем урок с информацией о курсе
+            const lesson = await prisma.lesson.findUnique({
+                where: { id: lessonId },
+                include: { course: true },
+            });
+
+            if (!lesson) {
+                return res.status(404).json({ error: "Lesson not found" });
+            }
+
+            // Находим пользователей, которые прошли этот урок
+            // (т.е. их currentLessonIndex больше orderIndex этого урока или курс завершен)
+            const usersWhoCompleted = await prisma.userCourse.findMany({
+                where: {
+                    courseId: lesson.courseId,
+                    OR: [
+                        { currentLessonIndex: { gt: lesson.orderIndex } },
+                        { completedAt: { not: null } },
+                    ],
+                },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            telegramId: true,
+                            username: true,
+                            firstName: true,
+                            lastName: true,
+                        },
+                    },
+                },
+            });
+
+            const users = usersWhoCompleted.map((uc) => uc.user);
+
+            res.json({ success: true, data: users });
+        } catch (error) {
+            console.error("Error fetching completed users:", error);
+            res.status(500).json({ error: "Failed to fetch completed users" });
+        }
+    }
+);
+
+// Отправить уведомления о добавленном тесте
+app.post(
+    "/api/lessons/:id/notify-test-added",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const lessonId = req.params.id;
+            const { testId, testTitle } = req.body;
+
+            if (!bot) {
+                return res.status(500).json({ error: "Bot not configured" });
+            }
+
+            // Получаем пользователей, которые прошли урок
+            const usersResponse = await prisma.lesson.findUnique({
+                where: { id: lessonId },
+                include: {
+                    course: {
+                        include: {
+                            userCourses: {
+                                where: {
+                                    OR: [
+                                        {
+                                            currentLessonIndex: {
+                                                gt: await prisma.lesson
+                                                    .findUnique({
+                                                        where: { id: lessonId },
+                                                    })
+                                                    .then(
+                                                        (l) =>
+                                                            l?.orderIndex || 0
+                                                    ),
+                                            },
+                                        },
+                                        { completedAt: { not: null } },
+                                    ],
+                                },
+                                include: {
+                                    user: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            if (!usersResponse) {
+                return res.status(404).json({ error: "Lesson not found" });
+            }
+
+            const lesson = await prisma.lesson.findUnique({
+                where: { id: lessonId },
+                include: { course: true },
+            });
+
+            // Находим пользователей более простым способом
+            const usersWhoCompleted = await prisma.userCourse.findMany({
+                where: {
+                    courseId: lesson?.courseId,
+                    OR: [
+                        { currentLessonIndex: { gt: lesson?.orderIndex || 0 } },
+                        { completedAt: { not: null } },
+                    ],
+                },
+                include: {
+                    user: true,
+                },
+            });
+
+            let notificationsSent = 0;
+
+            const message =
+                `📝 *Новый тест доступен!*\n\n` +
+                `К уроку "${lesson?.title}", который вы уже прошли, был добавлен тест.\n\n` +
+                `🎯 *Тест:* ${testTitle}\n\n` +
+                `Пройдите его, чтобы закрепить полученные знания! Нажмите /start для продолжения.`;
+
+            // Отправляем уведомления
+            for (const userCourse of usersWhoCompleted) {
+                try {
+                    await bot.sendMessage(userCourse.user.telegramId, message, {
+                        parse_mode: "Markdown",
+                    });
+                    notificationsSent++;
+                } catch (error) {
+                    console.error(
+                        `Failed to send notification to user ${userCourse.user.telegramId}:`,
+                        error
+                    );
+                }
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    notificationsSent,
+                    totalUsers: usersWhoCompleted.length,
+                },
+            });
+        } catch (error) {
+            console.error("Error sending test notifications:", error);
+            res.status(500).json({ error: "Failed to send notifications" });
+        }
+    }
+);
+
 // Создать урок
 app.post("/api/lessons", authenticateToken, async (req, res) => {
     try {
@@ -573,6 +736,59 @@ app.get("/api/tests", authenticateToken, async (req, res) => {
     }
 });
 
+// Создать тест
+app.post("/api/tests", authenticateToken, async (req, res) => {
+    try {
+        const { lessonId, title, questions } = req.body;
+
+        // Проверяем, что урок существует и у него еще нет теста
+        const lesson = await prisma.lesson.findUnique({
+            where: { id: lessonId },
+            include: { test: true },
+        });
+
+        if (!lesson) {
+            return res.status(404).json({ error: "Lesson not found" });
+        }
+
+        if (lesson.test) {
+            return res.status(400).json({ error: "Lesson already has a test" });
+        }
+
+        // Создаем тест в транзакции
+        const result = await prisma.$transaction(async (tx) => {
+            // Создаем тест
+            const test = await tx.test.create({
+                data: {
+                    lessonId,
+                    title,
+                },
+            });
+
+            // Создаем вопросы
+            if (questions && questions.length > 0) {
+                await tx.question.createMany({
+                    data: questions.map((q: any, index: number) => ({
+                        testId: test.id,
+                        questionText: q.questionText,
+                        options: q.options,
+                        correctOption: q.correctOption,
+                        orderIndex:
+                            q.orderIndex !== undefined ? q.orderIndex : index,
+                    })),
+                });
+            }
+
+            return test;
+        });
+
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error("Error creating test:", error);
+        res.status(500).json({ error: "Failed to create test" });
+    }
+});
+
 // Получить вопросы теста
 app.get("/api/tests/:id/questions", authenticateToken, async (req, res) => {
     try {
@@ -584,6 +800,52 @@ app.get("/api/tests/:id/questions", authenticateToken, async (req, res) => {
         res.json({ success: true, data: questions });
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch test questions" });
+    }
+});
+
+// Обновить тест
+app.put("/api/tests/:id", authenticateToken, async (req, res) => {
+    try {
+        const { title, questions } = req.body;
+
+        const result = await prisma.$transaction(async (tx) => {
+            // Обновляем тест
+            const test = await tx.test.update({
+                where: { id: req.params.id },
+                data: { title },
+            });
+
+            // Если переданы вопросы, обновляем их
+            if (questions) {
+                // Удаляем старые вопросы
+                await tx.question.deleteMany({
+                    where: { testId: req.params.id },
+                });
+
+                // Создаем новые вопросы
+                if (questions.length > 0) {
+                    await tx.question.createMany({
+                        data: questions.map((q: any, index: number) => ({
+                            testId: req.params.id,
+                            questionText: q.questionText,
+                            options: q.options,
+                            correctOption: q.correctOption,
+                            orderIndex:
+                                q.orderIndex !== undefined
+                                    ? q.orderIndex
+                                    : index,
+                        })),
+                    });
+                }
+            }
+
+            return test;
+        });
+
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error("Error updating test:", error);
+        res.status(500).json({ error: "Failed to update test" });
     }
 });
 

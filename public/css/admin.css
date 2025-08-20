@@ -886,3 +886,967 @@ tr:hover {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--dark-slate-gray);
 }
+
+/* Стили для создания тестов */
+.create-test-modal .modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.test-questions-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.test-questions-section h4 {
+    margin-bottom: 15px;
+    color: var(--dark-color);
+}
+
+#questionsContainer {
+    margin-bottom: 15px;
+}
+
+.question-form-item {
+    background: var(--charcoal);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--light-color);
+}
+
+.question-header h5 {
+    margin: 0;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.remove-question-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.option-item input[type="radio"] {
+    width: auto;
+    margin: 0;
+}
+
+.option-item:has(input[type="radio"]:checked) {
+    background: rgba(82, 121, 111, 0.1);
+    border-color: var(--primary-color);
+}
+
+/* Стили для модального окна уведомлений */
+.test-notification-modal .notification-options {
+    margin: 20px 0;
+}
+
+.test-notification-modal .user-stats {
+    background: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.user-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+}
+
+.user-name {
+    font-weight: 500;
+    display: block;
+}
+
+.user-username {
+    color: #666;
+    font-size: 12px;
+}
+
+.notification-preview {
+    background: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.notification-preview h5 {
+    margin-bottom: 10px;
+    color: var(--dark-color);
+}
+
+.no-users-info,
+.error-info {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.users-stats .stat-item {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+/* Улучшения для предпросмотра урока */
+.lesson-preview-media,
+.notification-preview-media {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.lesson-media-container,
+.notification-media-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Стили для деталей урока */
+.lesson-details-content .details-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--light-color);
+}
+
+.lesson-details-content .details-section:last-child {
+    border-bottom: none;
+}
+
+.info-grid,
+.info-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.info-item,
+.info-preview-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.info-item label,
+.info-preview-item label {
+    font-weight: 500;
+    color: var(--hookers-green);
+}
+
+.media-url a,
+.button-url a {
+    color: var(--primary-color);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.media-url a:hover,
+.button-url a:hover {
+    text-decoration: underline;
+}
+
+.lesson-caption-full,
+.lesson-caption-preview {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    margin-top: 10px;
+    line-height: 1.6;
+}
+
+/* Стили для действий с тестами */
+.test-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.no-test-info {
+    text-align: center;
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.test-info {
+    background: rgba(82, 121, 111, 0.05);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.test-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+}
+
+.stat-item label {
+    font-weight: 500;
+    color: var(--hookers-green);
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .create-test-modal .modal-content {
+        width: 95%;
+        margin: 10px;
+        max-height: 90vh;
+    }
+
+    .question-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .remove-question-btn {
+        align-self: flex-end;
+    }
+
+    .option-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .users-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-grid,
+    .info-preview-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .test-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .test-actions {
+        flex-direction: column;
+    }
+}
+
+/* Анимации */
+.question-form-item {
+    animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-content {
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Улучшения для кнопок */
+.btn-sm.btn-primary {
+    background: var(--primary-color);
+}
+
+.btn-sm.btn-primary:hover {
+    background: var(--dark-slate-gray);
+    transform: translateY(-1px);
+}
+
+/* Стили для загрузки */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--hookers-green);
+}
+
+.loading::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--light-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+/* Добавить эти стили в конец файла public/css/admin.css */
+
+/* Стили для создания тестов */
+.create-test-modal .modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.test-questions-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(132, 169, 140, 0.05);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.test-questions-section h4 {
+    margin-bottom: 15px;
+    color: var(--dark-color);
+    font-weight: 600;
+}
+
+#questionsContainer {
+    margin-bottom: 15px;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--light-color);
+}
+
+.question-header h5 {
+    margin: 0;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.remove-question-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: rgba(132, 169, 140, 0.05);
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.option-item:hover {
+    background: rgba(132, 169, 140, 0.1);
+}
+
+.option-item input[type="radio"] {
+    width: auto;
+    margin: 0;
+    accent-color: var(--primary-color);
+}
+
+.option-item input[type="text"] {
+    flex: 1;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: white;
+    color: black;
+    transition: border-color 0.3s ease;
+}
+
+.option-item input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(82, 121, 111, 0.1);
+}
+
+.option-item:has(input[type="radio"]:checked) {
+    background: rgba(82, 121, 111, 0.15);
+    border-color: var(--primary-color);
+}
+
+.option-item:has(input[type="radio"]:checked) input[type="text"] {
+    border-color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Стили для модального окна уведомлений */
+.test-notification-modal .notification-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--light-color);
+}
+
+.test-notification-modal .notification-header h3 {
+    color: var(--success-color);
+    margin-bottom: 10px;
+}
+
+.test-notification-modal .notification-options {
+    margin: 20px 0;
+}
+
+.test-notification-modal .notification-options h4 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.test-notification-modal .user-stats {
+    background: rgba(132, 169, 140, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 5px;
+    background: var(--charcoal);
+}
+
+.user-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+    transition: transform 0.2s ease;
+}
+
+.user-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(82, 121, 111, 0.1);
+}
+
+.user-name {
+    font-weight: 500;
+    display: block;
+    color: var(--dark-color);
+}
+
+.user-username {
+    color: var(--hookers-green);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.users-list {
+    margin-top: 10px;
+}
+
+.users-list summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--primary-color);
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.users-list summary:hover {
+    background: rgba(82, 121, 111, 0.1);
+}
+
+.notification-preview {
+    background: rgba(132, 169, 140, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.notification-preview h5 {
+    margin-bottom: 10px;
+    color: var(--dark-color);
+    font-weight: 600;
+}
+
+.message-preview {
+    background: var(--charcoal);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.no-users-info,
+.error-info {
+    text-align: center;
+    padding: 20px;
+    color: var(--hookers-green);
+    font-style: italic;
+}
+
+.users-stats .stat-item {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+/* Улучшения для предпросмотра урока */
+.lesson-preview-media,
+.notification-preview-media {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: var(--border-radius);
+    margin-bottom: 15px;
+    box-shadow: var(--shadow);
+}
+
+.lesson-media-container,
+.notification-media-container {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: rgba(132, 169, 140, 0.05);
+    border-radius: var(--border-radius);
+}
+
+/* Стили для деталей урока */
+.lesson-details-content .details-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--light-color);
+}
+
+.lesson-details-content .details-section:last-child {
+    border-bottom: none;
+}
+
+.lesson-details-content .details-section h4 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-grid,
+.info-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.info-item,
+.info-preview-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(132, 169, 140, 0.05);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.info-item label,
+.info-preview-item label {
+    font-weight: 500;
+    color: var(--hookers-green);
+    margin-right: 10px;
+}
+
+.info-item span,
+.info-preview-item span {
+    text-align: right;
+    word-break: break-word;
+}
+
+.media-url a,
+.button-url a {
+    color: var(--primary-color);
+    text-decoration: none;
+    word-break: break-all;
+    font-size: 14px;
+}
+
+.media-url a:hover,
+.button-url a:hover {
+    text-decoration: underline;
+}
+
+.lesson-caption-full,
+.lesson-caption-preview {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    margin-top: 10px;
+    line-height: 1.6;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили для действий с тестами */
+.test-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.no-test-info {
+    text-align: center;
+    padding: 30px;
+    background: rgba(200, 200, 200, 0.1);
+    border-radius: var(--border-radius);
+    border: 1px dashed var(--border-color);
+}
+
+.no-test-info p {
+    margin-bottom: 15px;
+    color: var(--hookers-green);
+    font-size: 16px;
+}
+
+.test-info {
+    background: rgba(82, 121, 111, 0.05);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+}
+
+.test-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.test-overview .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.test-overview .stat-item label {
+    font-weight: 500;
+    color: var(--hookers-green);
+}
+
+.test-overview .stat-item span {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Дополнительные утилитарные классы */
+.text-center {
+    text-align: center;
+}
+
+.text-success {
+    color: var(--success-color);
+}
+
+.text-warning {
+    color: var(--warning-color);
+}
+
+.text-danger {
+    color: var(--danger-color);
+}
+
+.text-primary {
+    color: var(--primary-color);
+}
+
+.bg-light {
+    background-color: rgba(132, 169, 140, 0.05);
+}
+
+.border-primary {
+    border-color: var(--primary-color);
+}
+
+.border-success {
+    border-color: var(--success-color);
+}
+
+.border-warning {
+    border-color: var(--warning-color);
+}
+
+.border-danger {
+    border-color: var(--danger-color);
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .create-test-modal .modal-content {
+        width: 95%;
+        margin: 10px;
+        max-height: 90vh;
+        padding: 15px;
+    }
+
+    .question-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .remove-question-btn {
+        align-self: flex-end;
+    }
+
+    .option-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .option-item input[type="radio"] {
+        align-self: flex-start;
+    }
+
+    .users-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-grid,
+    .info-preview-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .test-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .test-actions {
+        flex-direction: column;
+    }
+
+    .info-item,
+    .info-preview-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .info-item span,
+    .info-preview-item span {
+        text-align: left;
+    }
+}
+
+/* Анимации */
+.question-form-item {
+    animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-content {
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.user-item {
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Улучшения для кнопок */
+.btn-sm.btn-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-sm.btn-primary:hover {
+    background: var(--dark-slate-gray);
+    border-color: var(--dark-slate-gray);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(82, 121, 111, 0.3);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Стили для загрузки */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--hookers-green);
+    font-weight: 500;
+}
+
+.loading::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--light-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+/* Стили для статусов тестов */
+.test-status .test-indicator.has-test {
+    background: var(--success-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.test-status .test-indicator.no-test {
+    background: var(--cambridge-blue);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.test-status .test-questions {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    color: var(--hookers-green);
+}
+
+/* Стили для кнопок действий в таблице */
+.action-buttons .btn[onclick*="createTestForLesson"] {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.action-buttons .btn[onclick*="createTestForLesson"]:hover {
+    background: #5a8f5f;
+    border-color: #5a8f5f;
+}
+
+.action-buttons .btn[onclick*="viewLessonTest"] {
+    background: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+.action-buttons .btn[onclick*="viewLessonTest"]:hover {
+    background: #b8843e;
+    border-color: #b8843e;
+}

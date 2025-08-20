@@ -476,18 +476,18 @@ export class LessonsManager {
 
                 <div class="details-section">
                     <h4>📝 Тест</h4>
-                    ${this.generateTestSection(lesson.test)}
+                    ${this.generateTestSection(lesson.test, lesson.id)}
                 </div>
             </div>
         `;
     }
 
-    generateTestSection(test) {
+    generateTestSection(test, lessonId) {
         if (!test) {
             return `
                 <div class="no-test-info">
                     <p>❌ К этому уроку не привязан тест</p>
-                    <button class="btn btn-primary" onclick="createTestForLesson('${test?.lessonId || ''}')">
+                    <button class="btn btn-primary" onclick="createTestForLesson('${lessonId}')">
                         ➕ Создать тест
                     </button>
                 </div>
@@ -515,7 +515,7 @@ export class LessonsManager {
                     </div>
                 </div>
                 <div class="test-actions">
-                    <button class="btn btn-info" onclick="viewLessonTest('${test.lessonId}')">
+                    <button class="btn btn-info" onclick="viewLessonTest('${lessonId}')">
                         📝 Просмотреть тест
                     </button>
                 </div>
@@ -628,49 +628,356 @@ export class LessonsManager {
     }
 
     async createTestForLesson(lessonId) {
+        try {
+            // Проверяем, есть ли уже тест для этого урока
+            const lessonResponse = await APIClient.get(`/api/lessons/${lessonId}`);
+            if (!lessonResponse.success) {
+                throw new Error('Не удалось загрузить урок');
+            }
+
+            const lesson = lessonResponse.data;
+            if (lesson.test) {
+                UIManager.showErrorMessage('У этого урока уже есть тест');
+                return;
+            }
+
+            this.showCreateTestModal(lessonId, lesson);
+
+        } catch (error) {
+            UIManager.showErrorMessage('Ошибка: ' + error.message);
+        }
+    }
+
+    showCreateTestModal(lessonId, lesson) {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'block';
         modal.innerHTML = `
-            <div class="modal-content create-test-modal" style="max-width: 500px;">
+            <div class="modal-content create-test-modal" style="max-width: 800px;">
                 <button class="close-modal">&times;</button>
-                <h3>📝 Создание теста</h3>
-                <div class="create-test-info">
-                    <p>Функция создания тестов находится в разработке.</p>
-                    <p>В текущей версии тесты можно создавать через:</p>
-                    <ul>
-                        <li>📊 Систему управления базой данных</li>
-                        <li>🌱 Seed скрипты</li>
-                        <li>🔧 Прямые SQL запросы</li>
-                    </ul>
-                    
-                    <div class="test-creation-info">
-                        <h4>Структура теста:</h4>
-                        <div class="test-structure">
-                            <div class="structure-item">
-                                <strong>Test:</strong> Основная таблица теста
-                            </div>
-                            <div class="structure-item">
-                                <strong>Questions:</strong> Вопросы с вариантами ответов
-                            </div>
-                            <div class="structure-item">
-                                <strong>Связь:</strong> Один урок - один тест
-                            </div>
-                        </div>
+                <h3>📝 Создание теста для урока: ${lesson.title}</h3>
+                
+                <form id="createTestForm">
+                    <div class="form-group">
+                        <label for="testTitle">Название теста</label>
+                        <input type="text" id="testTitle" name="title" required 
+                               value="Тест по уроку: ${lesson.title}" />
                     </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Закрыть</button>
-                </div>
+
+                    <div class="test-questions-section">
+                        <h4>Вопросы теста</h4>
+                        <div id="questionsContainer">
+                            <!-- Вопросы будут добавляться динамически -->
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="addQuestionBtn">
+                            ➕ Добавить вопрос
+                        </button>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary">Создать тест</button>
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Отмена</button>
+                    </div>
+                </form>
             </div>
         `;
 
+        // Добавляем обработчики
         modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.remove();
         });
 
+        // Обработчик добавления вопросов
+        modal.querySelector('#addQuestionBtn').addEventListener('click', () => {
+            this.addQuestionToForm(modal.querySelector('#questionsContainer'));
+        });
+
+        // Обработчик отправки формы
+        modal.querySelector('#createTestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleCreateTestSubmit(e, lessonId, modal);
+        });
+
+        // Добавляем первый вопрос по умолчанию
+        this.addQuestionToForm(modal.querySelector('#questionsContainer'));
+
         document.body.appendChild(modal);
+    }
+
+    addQuestionToForm(container) {
+        const questionIndex = container.children.length;
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-form-item';
+        questionDiv.innerHTML = `
+            <div class="question-header">
+                <h5>Вопрос ${questionIndex + 1}</h5>
+                <button type="button" class="btn btn-sm btn-danger remove-question-btn">🗑️</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Текст вопроса</label>
+                <textarea name="questions[${questionIndex}][text]" required rows="2" 
+                          placeholder="Введите текст вопроса..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Варианты ответов (отметьте правильный)</label>
+                <div class="options-list">
+                    ${[0, 1, 2, 3].map(optionIndex => `
+                        <div class="option-item">
+                            <input type="radio" name="questions[${questionIndex}][correct]" 
+                                   value="${optionIndex}" ${optionIndex === 0 ? 'checked' : ''} />
+                            <input type="text" name="questions[${questionIndex}][options][${optionIndex}]" 
+                                   placeholder="Вариант ${optionIndex + 1}" required />
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        // Добавляем обработчик удаления вопроса
+        questionDiv.querySelector('.remove-question-btn').addEventListener('click', () => {
+            if (container.children.length > 1) {
+                questionDiv.remove();
+                this.updateQuestionNumbers(container);
+            } else {
+                UIManager.showErrorMessage('Тест должен содержать минимум один вопрос');
+            }
+        });
+
+        container.appendChild(questionDiv);
+    }
+
+    updateQuestionNumbers(container) {
+        Array.from(container.children).forEach((questionDiv, index) => {
+            questionDiv.querySelector('h5').textContent = `Вопрос ${index + 1}`;
+
+            // Обновляем индексы в именах полей
+            const textarea = questionDiv.querySelector('textarea');
+            textarea.name = `questions[${index}][text]`;
+
+            const radioButtons = questionDiv.querySelectorAll('input[type="radio"]');
+            const textInputs = questionDiv.querySelectorAll('input[type="text"]');
+
+            radioButtons.forEach((radio, optionIndex) => {
+                radio.name = `questions[${index}][correct]`;
+                radio.value = optionIndex;
+            });
+
+            textInputs.forEach((input, optionIndex) => {
+                input.name = `questions[${index}][options][${optionIndex}]`;
+            });
+        });
+    }
+
+    async handleCreateTestSubmit(event, lessonId, modal) {
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+
+        try {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Создание теста...';
+
+            const formData = new FormData(event.target);
+
+            // Собираем данные теста
+            const testData = {
+                lessonId: lessonId,
+                title: formData.get('title'),
+                questions: []
+            };
+
+            // Собираем вопросы
+            const questionsContainer = modal.querySelector('#questionsContainer');
+            const questionItems = questionsContainer.querySelectorAll('.question-form-item');
+
+            questionItems.forEach((questionDiv, questionIndex) => {
+                const questionText = formData.get(`questions[${questionIndex}][text]`);
+                const correctOption = parseInt(formData.get(`questions[${questionIndex}][correct]`));
+
+                const options = [];
+                for (let i = 0; i < 4; i++) {
+                    const option = formData.get(`questions[${questionIndex}][options][${i}]`);
+                    if (option) {
+                        options.push(option);
+                    }
+                }
+
+                if (questionText && options.length >= 2) {
+                    testData.questions.push({
+                        questionText,
+                        options,
+                        correctOption,
+                        orderIndex: questionIndex
+                    });
+                }
+            });
+
+            // Валидация
+            if (!testData.title.trim()) {
+                throw new Error('Введите название теста');
+            }
+
+            if (testData.questions.length === 0) {
+                throw new Error('Добавьте минимум один вопрос');
+            }
+
+            // Проверяем, что у всех вопросов минимум 2 варианта ответа
+            for (let i = 0; i < testData.questions.length; i++) {
+                if (testData.questions[i].options.length < 2) {
+                    throw new Error(`Вопрос ${i + 1} должен содержать минимум 2 варианта ответа`);
+                }
+            }
+
+            // Отправляем запрос на создание теста
+            const response = await APIClient.post('/api/tests', testData);
+
+            if (response && response.success) {
+                modal.remove();
+                this.loadLessons(); // Обновляем таблицу уроков
+                UIManager.showSuccessMessage('Тест успешно создан!');
+
+                // Показываем модальное окно с опцией отправки уведомлений
+                this.showTestCreatedNotificationModal(lessonId, response.data);
+            }
+
+        } catch (error) {
+            UIManager.showErrorMessage('Ошибка создания теста: ' + error.message);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        }
+    }
+
+    showTestCreatedNotificationModal(lessonId, test) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content test-notification-modal" style="max-width: 600px;">
+                <button class="close-modal">&times;</button>
+                <div class="notification-header">
+                    <h3>✅ Тест создан успешно!</h3>
+                    <p>Тест "${test.title}" был создан и привязан к уроку.</p>
+                </div>
+
+                <div class="notification-options">
+                    <h4>📢 Уведомить пользователей</h4>
+                    <p>Хотите ли вы отправить уведомление пользователям, которые уже прошли этот урок, о том, что теперь доступен тест?</p>
+                    
+                    <div class="user-stats" id="userStatsContainer">
+                        <div class="loading">Загружаем статистику пользователей...</div>
+                    </div>
+
+                    <div class="notification-preview">
+                        <h5>Предпросмотр уведомления:</h5>
+                        <div class="message-preview">
+                            📝 <strong>Новый тест доступен!</strong><br><br>
+                            К уроку, который вы уже прошли, был добавлен тест. 
+                            Пройдите его, чтобы закрепить полученные знания!<br><br>
+                            🎯 Тест: ${test.title}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-primary" id="sendNotificationsBtn">
+                        📤 Отправить уведомления
+                    </button>
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                        Пропустить
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Добавляем обработчики
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        // Загружаем статистику пользователей
+        this.loadUsersWhoCompletedLesson(lessonId, modal.querySelector('#userStatsContainer'));
+
+        // Обработчик отправки уведомлений
+        modal.querySelector('#sendNotificationsBtn').addEventListener('click', async () => {
+            await this.sendTestNotificationsToUsers(lessonId, test, modal);
+        });
+
+        document.body.appendChild(modal);
+    }
+
+    async loadUsersWhoCompletedLesson(lessonId, container) {
+        try {
+            const response = await APIClient.get(`/api/lessons/${lessonId}/completed-users`);
+
+            if (response && response.success) {
+                const users = response.data;
+
+                if (users.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-users-info">
+                            <p>ℹ️ Пока нет пользователей, которые прошли этот урок.</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="users-stats">
+                            <div class="stat-item">
+                                <strong>${users.length}</strong> пользователей прошли этот урок
+                            </div>
+                            <details class="users-list">
+                                <summary>Показать список пользователей</summary>
+                                <div class="users-grid">
+                                    ${users.map(user => `
+                                        <div class="user-item">
+                                            <span class="user-name">${user.firstName || ''} ${user.lastName || ''}</span>
+                                            <span class="user-username">@${user.username || 'N/A'}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </details>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            container.innerHTML = `
+                <div class="error-info">
+                    <p>❌ Ошибка загрузки статистики пользователей</p>
+                </div>
+            `;
+        }
+    }
+
+    async sendTestNotificationsToUsers(lessonId, test, modal) {
+        const sendButton = modal.querySelector('#sendNotificationsBtn');
+        const originalText = sendButton.textContent;
+
+        try {
+            sendButton.disabled = true;
+            sendButton.textContent = 'Отправка уведомлений...';
+
+            const response = await APIClient.post(`/api/lessons/${lessonId}/notify-test-added`, {
+                testId: test.id,
+                testTitle: test.title
+            });
+
+            if (response && response.success) {
+                modal.remove();
+                UIManager.showSuccessMessage(
+                    `Уведомления отправлены ${response.data.notificationsSent} пользователям`
+                );
+            }
+
+        } catch (error) {
+            UIManager.showErrorMessage('Ошибка отправки уведомлений: ' + error.message);
+        } finally {
+            sendButton.disabled = false;
+            sendButton.textContent = originalText;
+        }
     }
 
     async viewLessonTest(lessonId) {
@@ -726,258 +1033,6 @@ export class LessonsManager {
         }
 
         element.textContent = infoText;
-    }
-
-    // Utility methods for lesson management
-    async exportLessonsData() {
-        try {
-            const response = await APIClient.get('/api/lessons', { limit: 1000 });
-
-            if (response && response.success) {
-                const exportData = this.prepareLessonsExportData(response.data);
-                this.downloadJSON(exportData, `lessons_export_${new Date().toISOString().split('T')[0]}.json`);
-                UIManager.showSuccessMessage('Данные уроков экспортированы');
-            }
-
-        } catch (error) {
-            UIManager.showErrorMessage('Ошибка экспорта данных: ' + error.message);
-        }
-    }
-
-    prepareLessonsExportData(lessons) {
-        return {
-            export_info: {
-                total_lessons: lessons.length,
-                export_date: new Date().toISOString(),
-                format: 'lessons_complete_data'
-            },
-            lessons: lessons.map((lesson, index) => ({
-                number: index + 1,
-                id: lesson.id,
-                course: {
-                    id: lesson.course?.id,
-                    title: lesson.course?.title,
-                    is_active: lesson.course?.isActive
-                },
-                title: lesson.title,
-                media_type: lesson.mediaType,
-                media_url: lesson.mediaUrl,
-                caption: lesson.caption,
-                button: {
-                    text: lesson.buttonText,
-                    url: lesson.buttonUrl
-                },
-                order_index: lesson.orderIndex,
-                test: {
-                    exists: !!lesson.test,
-                    id: lesson.test?.id,
-                    title: lesson.test?.title,
-                    questions_count: lesson.test?._count?.questions || 0
-                },
-                timestamps: {
-                    created_at: lesson.createdAt,
-                    updated_at: lesson.updatedAt
-                }
-            })),
-            statistics: {
-                by_media_type: this.groupLessonsByMediaType(lessons),
-                by_course: this.groupLessonsByCourse(lessons),
-                with_tests: lessons.filter(l => l.test).length,
-                with_buttons: lessons.filter(l => l.buttonText && l.buttonUrl).length
-            }
-        };
-    }
-
-    groupLessonsByMediaType(lessons) {
-        return lessons.reduce((groups, lesson) => {
-            const type = lesson.mediaType;
-            groups[type] = (groups[type] || 0) + 1;
-            return groups;
-        }, {});
-    }
-
-    groupLessonsByCourse(lessons) {
-        return lessons.reduce((groups, lesson) => {
-            const courseTitle = lesson.course?.title || 'Unknown Course';
-            groups[courseTitle] = (groups[courseTitle] || 0) + 1;
-            return groups;
-        }, {});
-    }
-
-    downloadJSON(data, filename) {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    // Batch operations
-    async reorderLessons(courseId) {
-        try {
-            const response = await APIClient.get('/api/lessons', { courseId, limit: 1000 });
-
-            if (response && response.success) {
-                const lessons = response.data;
-                this.showReorderModal(lessons, courseId);
-            }
-
-        } catch (error) {
-            UIManager.showErrorMessage('Ошибка загрузки уроков для переупорядочивания: ' + error.message);
-        }
-    }
-
-    showReorderModal(lessons, courseId) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.style.display = 'block';
-        modal.innerHTML = `
-            <div class="modal-content reorder-lessons-modal" style="max-width: 600px;">
-                <button class="close-modal">&times;</button>
-                <h3>🔢 Переупорядочить уроки курса</h3>
-                <div class="reorder-info">
-                    <p>Перетащите уроки для изменения их порядка:</p>
-                </div>
-                <div class="lessons-reorder-list" id="reorderList">
-                    ${lessons.map((lesson, index) => `
-                        <div class="reorder-item" data-lesson-id="${lesson.id}" data-order="${lesson.orderIndex}">
-                            <div class="reorder-handle">⋮⋮</div>
-                            <div class="reorder-content">
-                                <div class="lesson-info">
-                                    <strong>${lesson.title}</strong>
-                                    <small>${lesson.mediaType === 'PHOTO' ? '📷' : '🎬'} ${lesson.mediaType}</small>
-                                </div>
-                                <div class="current-order">
-                                    Текущий порядок: ${lesson.orderIndex}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="modal-actions">
-                    <button class="btn btn-primary" onclick="saveReorder('${courseId}')">Сохранить порядок</button>
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Отмена</button>
-                </div>
-            </div>
-        `;
-
-        // Добавляем функциональность drag & drop (упрощенная версия)
-        window.saveReorder = async (courseId) => {
-            const items = modal.querySelectorAll('.reorder-item');
-            const updates = Array.from(items).map((item, index) => ({
-                id: item.dataset.lessonId,
-                orderIndex: index
-            }));
-
-            try {
-                // Здесь можно было бы реализовать массовое обновление порядка
-                UIManager.showSuccessMessage('Функция массового переупорядочивания в разработке');
-                modal.remove();
-            } catch (error) {
-                UIManager.showErrorMessage('Ошибка сохранения порядка: ' + error.message);
-            }
-        };
-
-        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.remove();
-        });
-
-        document.body.appendChild(modal);
-    }
-
-    // Statistics and analytics
-    async getLessonStatistics() {
-        try {
-            const response = await APIClient.get('/api/lessons', { limit: 1000 });
-
-            if (response && response.success) {
-                const lessons = response.data;
-                return this.calculateLessonStatistics(lessons);
-            }
-
-        } catch (error) {
-            console.error('Error calculating lesson statistics:', error);
-            return null;
-        }
-    }
-
-    calculateLessonStatistics(lessons) {
-        const stats = {
-            total: lessons.length,
-            byMediaType: this.groupLessonsByMediaType(lessons),
-            byCourse: this.groupLessonsByCourse(lessons),
-            withTests: lessons.filter(l => l.test).length,
-            withButtons: lessons.filter(l => l.buttonText && l.buttonUrl).length,
-            averageOrderIndex: lessons.reduce((sum, l) => sum + l.orderIndex, 0) / lessons.length,
-            coursesWithLessons: new Set(lessons.map(l => l.courseId)).size
-        };
-
-        stats.percentageWithTests = (stats.withTests / stats.total * 100).toFixed(1);
-        stats.percentageWithButtons = (stats.withButtons / stats.total * 100).toFixed(1);
-
-        return stats;
-    }
-
-    // Validation helpers
-    validateLessonData(lessonData) {
-        const errors = [];
-
-        if (!lessonData.courseId) {
-            errors.push('Не выбран курс');
-        }
-
-        if (!lessonData.title || lessonData.title.trim().length < 3) {
-            errors.push('Название урока должно содержать минимум 3 символа');
-        }
-
-        if (!lessonData.mediaUrl || !this.isValidUrl(lessonData.mediaUrl)) {
-            errors.push('Введите корректный URL медиа файла');
-        }
-
-        if (!lessonData.caption || lessonData.caption.trim().length < 10) {
-            errors.push('Описание урока должно содержать минимум 10 символов');
-        }
-
-        if (lessonData.buttonText && !lessonData.buttonUrl) {
-            errors.push('Если указан текст кнопки, необходимо указать URL кнопки');
-        }
-
-        if (lessonData.buttonUrl && !this.isValidUrl(lessonData.buttonUrl)) {
-            errors.push('Введите корректный URL для кнопки');
-        }
-
-        if (lessonData.orderIndex < 0) {
-            errors.push('Порядковый номер не может быть отрицательным');
-        }
-
-        return errors;
-    }
-
-    isValidUrl(string) {
-        try {
-            new URL(string);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    // Search and filtering helpers
-    getAdvancedSearchOptions() {
-        return {
-            searchFields: ['title', 'caption'],
-            filters: {
-                mediaType: ['PHOTO', 'VIDEO'],
-                hasTest: [true, false],
-                hasButton: [true, false]
-            }
-        };
     }
 
     showMessage(message, type) {
